@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from detectron2 import model_zoo
 from detectron2.engine import DefaultPredictor, DefaultTrainer
 from detectron2.config import get_cfg
+from detectron2.config import CfgNode as CN
 from detectron2.utils.visualizer import Visualizer, ColorMode
 from detectron2.data import MetadataCatalog, DatasetCatalog
 from detectron2.data.datasets import register_coco_instances
@@ -29,10 +30,10 @@ train_ds = DatasetCatalog.get('sartorius_train')
 # plt.imshow(out.get_image()[:, :, ::-1])
 
 
-_C.INPUT.RANDOM_FLIP = "horizontal"
-_C.INPUT.CROP = CN({"ENABLED": True})
-_C.INPUT.CROP.TYPE = "relative_range"
-_C.INPUT.CROP.SIZE = [0.9, 0.9]
+cfg.INPUT.RANDOM_FLIP = "horizontal"
+cfg.INPUT.CROP = CN({"ENABLED": True})
+cfg.INPUT.CROP.TYPE = "relative_range"
+cfg.INPUT.CROP.SIZE = [0.9, 0.9]
 
 cfg.merge_from_file(model_zoo.get_config_file(model_name))
 cfg.DATASETS.TRAIN = ("sartorius_train",)
