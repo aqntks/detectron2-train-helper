@@ -100,6 +100,8 @@ class AugTrainer(DefaultTrainer):
     @classmethod
     def build_train_loader(cls, cfg):
         return build_detection_train_loader(cfg, mapper=custom_mapper)
+
+    @classmethod
     def build_evaluator(cls, cfg, dataset_name, output_folder=None):
         return MAPIOUEvaluator(dataset_name)
 
