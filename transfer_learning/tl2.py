@@ -94,8 +94,8 @@ def setup():
     cfg.DATALOADER.NUM_WORKERS = 8
     cfg.MODEL.WEIGHTS = model_zoo.get_checkpoint_url(model_name)
     cfg.SOLVER.IMS_PER_BATCH = 2
-    # cfg.SOLVER.BASE_LR = 0.00025
-    cfg.SOLVER.BASE_LR = 0.0005
+    cfg.SOLVER.BASE_LR = 0.00025
+    # cfg.SOLVER.BASE_LR = 0.0005
     cfg.SOLVER.MAX_ITER = 300000
     cfg.SOLVER.STEPS = []
     cfg.SOLVER.CHECKPOINT_PERIOD = (len(DatasetCatalog.get('sartorius_train')) + len(
@@ -112,8 +112,8 @@ def setup():
 def main():
     cfg = setup()
 
-    cfg.OUTPUT_DIR = "./transfer/tl1"
-    cfg.MODEL.DEVICE = "cuda:1"
+    cfg.OUTPUT_DIR = "./transfer/tl2"
+    cfg.MODEL.DEVICE = "cuda:2"
     os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
 
     trainer = Trainer(cfg)
