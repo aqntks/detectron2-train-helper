@@ -1,3 +1,21 @@
+# transfer/tl2/model_0134847  /  fold2
+
+import detectron2
+from pathlib import Path
+import random, cv2, os
+import matplotlib.pyplot as plt
+import numpy as np
+import pycocotools.mask as mask_util
+# import some common detectron2 utilities
+from detectron2 import model_zoo
+from detectron2.engine import DefaultPredictor, DefaultTrainer
+from detectron2.config import get_cfg
+from detectron2.utils.visualizer import Visualizer, ColorMode
+from detectron2.data import MetadataCatalog, DatasetCatalog
+from detectron2.data.datasets import register_coco_instances
+from detectron2.utils.logger import setup_logger
+from detectron2.evaluation.evaluator import DatasetEvaluator
+
 import os
 import copy
 import torch
@@ -15,10 +33,35 @@ from detectron2.config import CfgNode as CN
 from detectron2.utils.logger import setup_logger
 from detectron2.data.detection_utils import *
 from detectron2.evaluation.evaluator import DatasetEvaluator
-
 setup_logger()
 
 
+def custom_mapper(dataset_dict):
+    dataset_dict = copy.deepcopy(dataset_dict)
+    image = read_image(dataset_dict["file_name"], format="BGR")
+    transform_list = [
+                        T.RandomCrop(crop_type='relative_range', crop_size=[0.5, 0.5]),
+                        T.ResizeShortestEdge(short_edge_length=(640, 672, 704, 736, 768, 800), max_size=1333, sample_style='choice'),
+                        T.RandomFlip(),
+                        T.RandomApply(T.RandomRotation((-10, 10)), prob=0.2),
+                        T.RandomApply(T.RandomSaturation(0.8, 1.2), prob=0.2),
+                        T.RandomApply(T.RandomBrightness(0.8, 1.2), prob=0.2),
+                        T.RandomApply(T.RandomContrast(0.6, 1.3), prob=0.2),
+                        T.RandomApply(T.RandomLighting(0.7), prob=0.2),
+                      ]
+    image, transforms = T.apply_transform_gens(transform_list, image)
+    dataset_dict["image"] = torch.as_tensor(image.transpose(2, 0, 1).astype("float32"))
+
+    annos = [
+        transform_instance_annotations(obj, transforms, image.shape[:2])
+        for obj in dataset_dict.pop("annotations")
+        if obj.get("iscrowd", 0) == 0
+    ]
+    instances = annotations_to_instances(annos, image.shape[:2], mask_format="bitmask")
+    dataset_dict["instances"] = filter_empty_instances(instances)
+    return dataset_dict
+
+# Taken from https://www.kaggle.com/theoviel/competition-metric-map-iou
 def precision_at(threshold, iou):
     matches = iou > threshold
     true_positives = np.sum(matches, axis=1) == 1  # Correct objects
@@ -60,33 +103,11 @@ class MAPIOUEvaluator(DatasetEvaluator):
         return {"MaP IoU": np.mean(self.scores)}
 
 
-def custom_mapper(dataset_dict):
-    dataset_dict = copy.deepcopy(dataset_dict)
-    image = read_image(dataset_dict["file_name"], format="BGR")
-    transform_list = [
-                        T.RandomCrop(crop_type='relative_range', crop_size=[0.5, 0.5]),
-                        T.ResizeShortestEdge(short_edge_length=(640, 672, 704, 736, 768, 800), max_size=1333, sample_style='choice'),
-                        T.RandomFlip(),
-                        T.RandomApply(T.RandomRotation((-10, 10)), prob=0.2),
-                        T.RandomApply(T.RandomSaturation(0.8, 1.2), prob=0.2),
-                        T.RandomApply(T.RandomBrightness(0.8, 1.2), prob=0.2),
-                        T.RandomApply(T.RandomContrast(0.6, 1.3), prob=0.2),
-                        T.RandomApply(T.RandomLighting(0.7), prob=0.2),
-                      ]
-    image, transforms = T.apply_transform_gens(transform_list, image)
-    dataset_dict["image"] = torch.as_tensor(image.transpose(2, 0, 1).astype("float32"))
-
-    annos = [
-        transform_instance_annotations(obj, transforms, image.shape[:2])
-        for obj in dataset_dict.pop("annotations")
-        if obj.get("iscrowd", 0) == 0
-    ]
-    instances = annotations_to_instances(annos, image.shape[:2], mask_format="bitmask")
-    dataset_dict["instances"] = filter_empty_instances(instances)
-    return dataset_dict
-
-
 class Trainer(DefaultTrainer):
+    @classmethod
+    def build_evaluator(cls, cfg, dataset_name, output_folder=None):
+        return MAPIOUEvaluator(dataset_name)
+
     @classmethod
     def build_train_loader(cls, cfg):
         return build_detection_train_loader(cfg, mapper=custom_mapper)
@@ -98,23 +119,25 @@ def setup():
 
     cfg = get_cfg()
     cfg.INPUT.MASK_FORMAT = 'bitmask'
-    register_coco_instances('sartorius_train', {}, 'annotations_all.json', dataDir)
-    register_coco_instances('sartorius_val', {}, 'annotations_val.json', dataDir)
+    register_coco_instances('sartorius_train', {}, 'coco_cell_train_fold2.json', dataDir)
+    register_coco_instances('sartorius_val', {}, 'coco_cell_valid_fold2.json', dataDir)
     metadata = MetadataCatalog.get('sartorius_train')
     train_ds = DatasetCatalog.get('sartorius_train')
 
     cfg.merge_from_file(model_zoo.get_config_file(model_name))
     cfg.DATASETS.TRAIN = ("sartorius_train",)
-    cfg.DATASETS.TEST = ()
+    cfg.DATASETS.TEST = ("sartorius_val",)
     cfg.DATALOADER.NUM_WORKERS = 8
-    cfg.MODEL.WEIGHTS = 'transfer/tl2/model_0151703.pth'
+    cfg.MODEL.WEIGHTS = 'transfer/tl2/model_0134847.pth'
     cfg.SOLVER.IMS_PER_BATCH = 2
     cfg.SOLVER.BASE_LR = 0.00025
     cfg.SOLVER.MAX_ITER = 30000
-    cfg.SOLVER.CHECKPOINT_PERIOD = 1000
     cfg.SOLVER.STEPS = []
+    cfg.SOLVER.CHECKPOINT_PERIOD = len(DatasetCatalog.get('sartorius_train')) // cfg.SOLVER.IMS_PER_BATCH  # Once per epoch
     cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 128
     cfg.MODEL.ROI_HEADS.NUM_CLASSES = 3
+    cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = .5
+    cfg.TEST.EVAL_PERIOD = len(DatasetCatalog.get('sartorius_train')) // cfg.SOLVER.IMS_PER_BATCH  # Once per epoch
 
     return cfg
 
@@ -122,8 +145,8 @@ def setup():
 def main():
     cfg = setup()
 
-    cfg.OUTPUT_DIR = "./ptl/ptl3"
-    cfg.MODEL.DEVICE = "cuda:0"
+    cfg.OUTPUT_DIR = "./ptl/ptl11"
+    cfg.MODEL.DEVICE = "cuda:1"
     os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
 
     trainer = Trainer(cfg)
