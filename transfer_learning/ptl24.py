@@ -1,4 +1,4 @@
-# transfer/tl2/model_0134847  /  new fold3
+# transfer/tl2/model_0134847  /  fold1
 
 import detectron2
 from pathlib import Path
@@ -119,8 +119,8 @@ def setup():
 
     cfg = get_cfg()
     cfg.INPUT.MASK_FORMAT = 'bitmask'
-    register_coco_instances('sartorius_train', {}, 'fold_temp/coco_cell_train_fold3.json', dataDir)
-    register_coco_instances('sartorius_val', {}, 'fold_temp/coco_cell_valid_fold3.json', dataDir)
+    register_coco_instances('sartorius_train', {}, 'coco_cell_train_fold1.json', dataDir)
+    register_coco_instances('sartorius_val', {}, 'coco_cell_valid_fold1.json', dataDir)
     metadata = MetadataCatalog.get('sartorius_train')
     train_ds = DatasetCatalog.get('sartorius_train')
 
@@ -128,7 +128,7 @@ def setup():
     cfg.DATASETS.TRAIN = ("sartorius_train",)
     cfg.DATASETS.TEST = ("sartorius_val",)
     cfg.DATALOADER.NUM_WORKERS = 8
-    cfg.MODEL.WEIGHTS = 'transfer/tl2/model_0134847.pth'
+    cfg.MODEL.WEIGHTS = 'transfer/tl2/model_0101135.pth'
     cfg.SOLVER.IMS_PER_BATCH = 2
     cfg.SOLVER.BASE_LR = 0.00025
     cfg.SOLVER.MAX_ITER = 30000
@@ -145,8 +145,8 @@ def setup():
 def main():
     cfg = setup()
 
-    cfg.OUTPUT_DIR = "./ptl/ptl20"
-    cfg.MODEL.DEVICE = "cuda:1"
+    cfg.OUTPUT_DIR = "./ptl/ptl24"
+    cfg.MODEL.DEVICE = "cuda:2"
     os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
 
     trainer = Trainer(cfg)
