@@ -69,8 +69,8 @@ dataDir=Path('./')
 DatasetCatalog.clear()
 MetadataCatalog.clear()
 
-register_coco_instances(Data_Resister_training,{}, 'coco_cell_train_fold5_polygon.json', dataDir)
-register_coco_instances(Data_Resister_valid,{}, 'coco_cell_valid_fold5_polygon.json', dataDir)
+register_coco_instances(Data_Resister_training,{}, 'coco_cell_train_fold5-not_cleaned.json', dataDir)
+register_coco_instances(Data_Resister_valid,{}, 'coco_cell_valid_fold5-not_cleaned.json', dataDir)
 
 
 metadata = MetadataCatalog.get(Data_Resister_training)
@@ -281,32 +281,25 @@ class MyTrainer(DefaultTrainer):
         return MAPIOUEvaluator(dataset_name)
 
 cfg = get_cfg()
-config_name = "Misc/cascade_mask_rcnn_X_152_32x8d_FPN_IN5k_gn_dconv.yaml"
+model_name = "Misc/cascade_mask_rcnn_X_152_32x8d_FPN_IN5k_gn_dconv.yaml"
+cfg.INPUT.MASK_FORMAT = 'polygon'
 
-cfg.merge_from_file(model_zoo.get_config_file(config_name))
+cfg.merge_from_file(model_zoo.get_config_file(model_name))
 cfg.DATASETS.TRAIN = (Data_Resister_training,)
 cfg.DATASETS.TEST = (Data_Resister_valid,)
-
-cfg.MODEL.WEIGHTS = 'transfer/tl2/model_0134847.pth'
-# cfg.MODEL.DEVICE = "cpu"
-
 cfg.DATALOADER.NUM_WORKERS = 2
-cfg.MODEL.ROI_HEADS.NUM_CLASSES = 3
+cfg.MODEL.WEIGHTS = 'transfer/tl2/model_0134847.pth'
 cfg.SOLVER.IMS_PER_BATCH = 2
-cfg.INPUT.MASK_FORMAT = 'polygon'
-cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5
-
-cfg.SOLVER.LR_SCHEDULER_NAME = "WarmupCosineLR"
-cfg.SOLVER.BASE_LR = 0.005
-cfg.SOLVER.MOMENTUM = 0.9
-
-cfg.SOLVER.WARMUP_ITERS = 400
-cfg.SOLVER.MAX_ITER = 40000
-cfg.TEST.EVAL_PERIOD = 300
-cfg.SOLVER.CHECKPOINT_PERIOD = 300
-
-cfg.OUTPUT_DIR = "./ptl/ptl23"
-cfg.MODEL.DEVICE = "cuda:1"
+cfg.SOLVER.BASE_LR = 0.00025
+cfg.SOLVER.MAX_ITER = 30000
+cfg.SOLVER.STEPS = []
+cfg.SOLVER.CHECKPOINT_PERIOD = len(DatasetCatalog.get(Data_Resister_training)) // cfg.SOLVER.IMS_PER_BATCH  # Once per epoch
+cfg.MODEL.ROI_HEADS.BATCH_SIZE_PER_IMAGE = 128
+cfg.MODEL.ROI_HEADS.NUM_CLASSES = 3
+cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = .5
+cfg.TEST.EVAL_PERIOD = len(DatasetCatalog.get(Data_Resister_valid)) // cfg.SOLVER.IMS_PER_BATCH  # Once per epoch
+cfg.OUTPUT_DIR = "./ptl/ptl25"
+cfg.MODEL.DEVICE = "cuda:0"
 
 os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
 trainer = MyTrainer(cfg)

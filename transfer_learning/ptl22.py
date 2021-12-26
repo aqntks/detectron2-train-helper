@@ -278,7 +278,7 @@ class MyTrainer(DefaultTrainer):
 
     @classmethod
     def build_evaluator(cls, cfg, dataset_name, output_folder=None):
-        return COCOEvaluator(dataset_name, cfg, False, output_folder)
+        return MAPIOUEvaluator(dataset_name)
 
 cfg = get_cfg()
 config_name = "Misc/cascade_mask_rcnn_X_152_32x8d_FPN_IN5k_gn_dconv.yaml"
@@ -297,7 +297,7 @@ cfg.INPUT.MASK_FORMAT = 'polygon'
 cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5
 
 cfg.SOLVER.LR_SCHEDULER_NAME = "WarmupCosineLR"
-cfg.SOLVER.BASE_LR = 0.00025
+cfg.SOLVER.BASE_LR = 0.005
 cfg.SOLVER.MOMENTUM = 0.9
 
 cfg.SOLVER.WARMUP_ITERS = 400
