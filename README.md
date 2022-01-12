@@ -1,5 +1,5 @@
-# Sartorius - Cell Instance Segmentation
-![](rank.png)
+# Sartorius - Cell Instance Segmentation 
+![](rank.png) Top 6% (SOLO)
 
 ![](title.png)
 
