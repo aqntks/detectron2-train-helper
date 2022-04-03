@@ -20,9 +20,11 @@ If successful, you'll help further research in neurobiology thanks to the collec
 
 - 테스트 모델 :  MaskRCNN-ResNet-50-C4, MaskRCNN-ResNet-50-FPN, MaskRCNN-ResNet-100-C4, MaskRCNN-ResNet-100-FPN, MaskRCNN-ResNeXt-101-32x8d-FPN, Cascade_MaskRCNN_ResNeXt_152_32x8d_FPN
 
-- 데이터 분할 : K-fold CrossValidation (5 fold splits)
-- 데이터 전처리 : 깨진 마스크 라벨링을 보정하기 위해 Clean Mask 작업 진행
-- 데이터 증강 : RandomCrop, ResizeShortestEdge, RandomFlip, RandomRotation, RandomSaturation, RandomBrightness, RandomContrast, RandomLighting
-- 모델 앙상블 : NMS 앙상블, NWS 앙상블
-- 전이 학습 (Transfer Learning) : LIVECell 데이터를 사용하여 Pre-Train 진행 
-- 추론 : TTA(Test Time Augmentation) 진행
+- **사용 프레임워크 및 라이브러리 :** Pytorch, Detectron2, MMDetection, monai, albumentations
+- **테스트 모델 :** MaskRCNN-ResNet-50-C4, MaskRCNN-ResNet-50-FPN, MaskRCNN-ResNet-100-C4, MaskRCNN-ResNet-100-FPN, MaskRCNN-ResNeXt-101-32x8d-FPN, Cascade_MaskRCNN_ResNeXt_152_32x8d_FPN
+- **데이터 분할 :** Stratified K-fold CrossValidation (5 fold splits)
+- **데이터 전처리 :** 깨진 마스크 라벨링을 보정하기 위해 Clean Mask 작업 진행
+- **데이터 증강 :** RandomCrop, ResizeShortestEdge, RandomFlip, RandomRotation, RandomSaturation, RandomBrightness, RandomContrast, RandomLighting
+- **모델 앙상블 :** NMS 앙상블, NMW 앙상블
+- **전이 학습 :** LIVECell 데이터를 사용하여 Pre-Train 진행
+- **추론 :** TTA(Test Time Augmentation) 진행
